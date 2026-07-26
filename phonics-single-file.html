@@ -1,0 +1,2474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>German Contrastive Phonics &mdash; Pilot</title>
+<!--
+  SINGLE-FILE BUILD.
+  style.css, data.js, game.js and app.js are all pasted inside this one file,
+  in that order. Nothing else needs to sit next to it: no folders, no paths,
+  no other uploads. Drop this one file anywhere and it runs.
+
+  The trade-off is that editing is fiddlier - the word lists are a long way
+  down. If you are changing words often, work in the split version (five
+  separate files) and keep this one for handing out.
+-->
+<style>
+:root {
+  --ink: #0f1720;
+  --panel: #172230;
+  --panel-2: #1e2c3d;
+  --line: #2c3d52;
+  --paper: #eef2f6;
+  --muted: #93a4b8;
+  --cyan: #5fd4d0;
+  --amber: #e8a94c;
+  --good: #6fcf7a;
+  --bad: #e77b6b;
+  --radius: 10px;
+
+  /* Reward scenes (game.js) — derived from the lab palette above, with the
+     two colours the subjects insist on: ice for the penguin, avocado green. */
+  --ice: #cfe0e8;
+  --ice-shade: #a9c4d0;
+  --ice-far: #22384a;
+  --peng-body: #0d1826;
+  --peng-rim: #33475e;
+  --avo-skin: #33502a;
+  --avo-skin-dark: #20351a;
+  --avo-flesh: #b8cf6f;
+  --avo-flesh-lit: #d6e59b;
+  --stone: #9a6a3a;
+  --steel: #93a5b5;
+  --steel-dark: #5f7386;
+  --steel-lit: #c3d1dc;
+  --wood: #a9743f;
+  --wood-dark: #6d4526;
+  --bench: #2a2018;
+  --mono: "Courier New", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.app-header-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brand-mark {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 0.5px;
+  font-size: 1.1rem;
+}
+
+.brand-name {
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.4px;
+}
+
+.stage-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.stage-dot {
+  font-size: 0.68rem;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: transparent;
+}
+
+.stage-dot.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.stage-dot.done {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.global-banner {
+  background: #3a2c14;
+  color: var(--amber);
+  border-bottom: 1px solid #5a4520;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.scoreboard {
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  text-align: right;
+  padding: 6px 20px;
+  letter-spacing: 0.3px;
+}
+
+.round-banner {
+  background: #24384a;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+.stars {
+  color: var(--amber);
+  font-size: 1.3rem;
+  letter-spacing: 3px;
+  margin: 10px 0;
+}
+
+.feedback-text.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Dictation (final stage) */
+
+.dictation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.dictation-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.dictation-row.played {
+  border-color: var(--good);
+}
+
+.dictation-number {
+  color: var(--muted);
+  font-family: var(--mono);
+  width: 18px;
+}
+
+.exercise-root {
+  flex: 1;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 36px 20px 60px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+
+.card h2 {
+  margin-top: 0;
+  font-family: var(--serif);
+  font-weight: normal;
+  font-size: 1.5rem;
+}
+
+.progress-line {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+/* Intro */
+
+.mnemonic {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--cyan);
+  font-size: 1.15rem;
+  border-left: 3px solid var(--cyan);
+  padding-left: 14px;
+  margin: 18px 0 28px;
+}
+
+.pattern-pair {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.pattern-example {
+  flex: 1;
+  min-width: 200px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+}
+
+.pattern-example .grapheme {
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.pattern-example .sound-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 6px 0 10px;
+}
+
+.pattern-example .example-word {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+
+.vs {
+  color: var(--muted);
+  font-family: var(--serif);
+  font-style: italic;
+}
+
+/* Buttons */
+
+.btn {
+  font-family: inherit;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--paper);
+  padding: 11px 18px;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) { border-color: var(--cyan); }
+.btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.btn-primary {
+  background: var(--cyan);
+  color: var(--ink);
+  border-color: var(--cyan);
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.btn-secondary {
+  background: transparent;
+  border-color: var(--muted);
+}
+
+.btn-audio {
+  color: var(--amber);
+  border-color: #4a3a20;
+}
+
+.btn-choice {
+  flex: 1;
+  min-width: 160px;
+  font-size: 1.05rem;
+  padding: 16px;
+}
+
+.mono { font-family: var(--mono); }
+
+.btn-choice.correct {
+  border-color: var(--good);
+  background: #16311c;
+}
+
+.btn-choice.wrong {
+  border-color: var(--bad);
+  background: #3a1c17;
+}
+
+.btn-record {
+  background: #3a1c17;
+  border-color: var(--bad);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.btn-record-stop {
+  background: var(--panel-2);
+  border-color: var(--bad);
+  color: var(--bad);
+  margin-left: 10px;
+}
+
+.choice-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+
+.feedback { min-height: 20px; }
+
+.feedback-text { font-size: 0.95rem; }
+.feedback-text.good { color: var(--good); }
+.feedback-text.bad { color: var(--bad); }
+
+/* Production */
+
+.example-word.big {
+  font-size: 2.2rem;
+  font-family: var(--serif);
+  margin: 20px 0;
+}
+
+.record-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+
+.record-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.playback-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.playback-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.playback-row audio {
+  height: 32px;
+}
+
+.hint {
+  font-size: 0.82rem;
+  margin-top: 10px;
+}
+
+/* Typed answers and letter tiles (used by the Spelling stage) */
+
+.type-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 18px 0;
+  flex-wrap: wrap;
+}
+
+.text-input {
+  flex: 1;
+  min-width: 200px;
+  font-size: 1.2rem;
+  font-family: var(--mono);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--paper);
+  padding: 11px 14px;
+  letter-spacing: 1px;
+}
+
+.text-input:focus {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+  border-color: var(--cyan);
+}
+
+.text-input:disabled {
+  opacity: 0.6;
+}
+
+.arrange-answer,
+.arrange-bank {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+  min-height: 46px;
+}
+
+.arrange-bank {
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+
+.tile {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  text-transform: none;
+  padding: 0;
+}
+
+.tile-bank {
+  background: var(--panel-2);
+}
+
+.tile-answer {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.tile-empty {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  opacity: 0.6;
+}
+
+.arrange-controls:empty {
+  margin: 0;
+}
+
+/* Final */
+
+.sentence-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 14px;
+}
+
+.play-log {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 14px 0;
+}
+
+.complete-card {
+  text-align: center;
+}
+
+.muted { color: var(--muted); }
+
+.app-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 18px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 480px) {
+  .card { padding: 20px; }
+  .choice-row { flex-direction: column; }
+  .pattern-pair { flex-direction: column; }
+  .vs { display: none; }
+}
+
+/* ==========================================================================
+   REWARD SCENES
+   Markup is generated by game.js. Two scenes: the penguin (Listen stage)
+   and the hammer (Spell stage).
+
+   Rule followed throughout: nothing is communicated by movement alone. The
+   pip row and the status line under each scene carry the same information
+   in text, so the reduced-motion and screen-reader versions lose the fun
+   but never lose the score.
+   ========================================================================== */
+
+.scene {
+  position: relative;
+  margin: 0 0 22px;
+}
+
+.scene-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--ink);
+}
+
+/* The honest read-out: one pip per word in the stage. */
+
+.scene-meter {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin: 11px 0 5px;
+}
+
+.pip {
+  width: 22px;
+  height: 14px;
+  display: inline-flex;
+}
+
+.scene-hammer .pip { width: 15px; }
+
+.pip svg { width: 100%; height: 100%; overflow: visible; }
+.pip svg path { fill: var(--line); transition: fill 200ms ease; }
+.pip-full svg path { fill: var(--cyan); }
+.scene-hammer .pip-full svg path { fill: var(--amber); }
+
+.pip-pop { animation: pip-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pip-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.55); }
+  100% { transform: scale(1); }
+}
+
+.scene-status {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.3px;
+}
+
+/* ---- Scene 1: the penguin ------------------------------------------------ */
+
+.peng-sky { fill: var(--panel-2); }
+.ice { fill: var(--ice); }
+.ice-shade { fill: var(--ice-shade); }
+.ice-far { fill: var(--ice-far); }
+
+.peng-body { fill: var(--peng-body); stroke: var(--peng-rim); stroke-width: 1.6; }
+.peng-belly { fill: var(--paper); }
+.peng-belly-wrap { transition: transform 500ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+.peng-wing { fill: #0a1420; stroke: var(--peng-rim); stroke-width: 1.4; }
+.peng-eye-white { fill: var(--paper); }
+.peng-pupil { fill: var(--peng-body); }
+.peng-pupils { transition: transform 240ms ease; }
+.peng-brow { stroke: #0a1420; stroke-width: 2.4; stroke-linecap: round; fill: none; }
+.peng-brows { transition: transform 240ms ease; }
+.peng-beak, .peng-foot { fill: var(--amber); }
+.beak-lower { transform: rotate(0deg); transition: transform 160ms ease; }
+
+.fish-body { fill: var(--cyan); }
+.fish-tail { fill: #3fa8a4; }
+.fish-eye { fill: var(--ink); }
+.fish-flyer { transform: translateX(340px); }
+.fish-arc { transform: translateY(24px); }
+.note-glyph { fill: var(--cyan); font-size: 24px; font-family: var(--serif); }
+.peng-note { opacity: 0; }
+
+/* Well fed: eyes up, brows up, a happier stance. */
+.scene-art.is-happy .peng-pupils { transform: translate(1px, -3px); }
+.scene-art.is-happy .peng-brows { transform: translateY(-3px); }
+.scene-art.is-stuffed .peng-belly { filter: drop-shadow(0 0 6px rgba(95, 212, 208, 0.25)); }
+
+/* Feeding: fish arcs in (x linear, y accelerating = a real throw), the
+   beak opens to meet it, then the penguin chomps and hops. */
+.scene-art.is-feeding .fish-flyer { animation: fish-x 580ms linear forwards; }
+.scene-art.is-feeding .fish-arc { animation: fish-y 580ms cubic-bezier(0.3, 0, 0.85, 1) forwards; }
+.scene-art.is-feeding .fish-spin { animation: fish-spin 580ms linear forwards; }
+.scene-art.is-feeding .beak-lower { animation: beak-chomp 760ms ease; }
+.scene-art.is-feeding .peng-note { animation: note-float 1500ms 600ms ease-out; }
+
+@keyframes fish-x {
+  0% { transform: translateX(340px); }
+  97% { transform: translateX(172px); opacity: 1; }
+  100% { transform: translateX(172px); opacity: 0; }
+}
+@keyframes fish-y {
+  from { transform: translateY(18px); }
+  to { transform: translateY(100px); }
+}
+@keyframes fish-spin {
+  from { transform: rotate(-34deg) scale(1.15); }
+  to { transform: rotate(8deg) scale(0.82); }
+}
+@keyframes beak-chomp {
+  0%, 8% { transform: rotate(0deg); }
+  30%, 70% { transform: rotate(19deg); }
+  76% { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes note-float {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-34px) scale(1.1); }
+}
+
+.peng.is-hopping { animation: peng-hop 620ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+@keyframes peng-hop {
+  0% { transform: translate(0, 0); }
+  16% { transform: translate(141px, 153px) scale(1.09, 0.9) translate(-141px, -153px); }
+  46% { transform: translateY(-15px); }
+  72% { transform: translate(141px, 153px) scale(1.04, 0.97) translate(-141px, -153px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Missing: the fish falls short. Deliberately quiet and quick — the written
+   explanation beside it is the part that should hold their attention. */
+.scene-art.is-missing .fish-flyer { animation: fish-x-short 900ms linear forwards; }
+.scene-art.is-missing .fish-arc { animation: fish-drop 900ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+.scene-art.is-missing .peng-brows { transform: translateY(5px) rotate(-4deg); }
+.scene-art.is-missing .peng-pupils { transform: translateY(2px); }
+
+@keyframes fish-x-short {
+  from { transform: translateX(340px); }
+  to { transform: translateX(226px); }
+}
+@keyframes fish-drop {
+  0% { transform: translateY(18px); }
+  100% { transform: translateY(210px) rotate(70deg); }
+}
+
+/* ---- Scene 2: the hammer and the avocado --------------------------------- */
+
+.bench-back { fill: var(--panel-2); }
+.bench { fill: var(--bench); }
+.bench-edge { stroke: #5c4630; stroke-width: 2; }
+.bench-grain { stroke: #3a2c1e; stroke-width: 1.5; fill: none; }
+
+.avo-skin { fill: var(--avo-skin); stroke: var(--avo-skin-dark); stroke-width: 2; }
+.avo-shine { stroke: #6f9147; stroke-width: 3.5; fill: none; stroke-linecap: round; opacity: 0.55; }
+.avo-wrap { transition: transform 90ms cubic-bezier(0.5, 0, 1, 1); }
+.avo-pulp ellipse { fill: var(--avo-flesh); opacity: 0; transition: opacity 200ms 120ms ease; }
+.avo-stone circle { fill: var(--stone); opacity: 0; }
+
+.hammer-handle { stroke: var(--wood); stroke-width: 11; stroke-linecap: round; }
+.hammer-grip { stroke: var(--wood-dark); stroke-width: 12.5; stroke-linecap: round; }
+.hammer-head { fill: var(--steel); stroke: var(--steel-dark); stroke-width: 2; }
+.hammer-band { fill: #7c8ea0; }
+.hammer-face { fill: var(--steel-lit); }
+
+/* Winding back: a touch of overshoot so each correct answer has a kick. */
+.hammer-arm { transition: transform 440ms cubic-bezier(0.34, 1.45, 0.64, 1); }
+.scene-art.is-smashing .hammer-arm { transition: transform 170ms cubic-bezier(0.7, 0, 1, 1); }
+.scene-art.is-wrecked .hammer-arm { transition: transform 420ms cubic-bezier(0.34, 1.5, 0.64, 1); }
+
+.scene-art.is-charging .hammer-head { animation: charge-glint 440ms ease; }
+@keyframes charge-glint {
+  0%, 100% { fill: var(--steel); }
+  45% { fill: var(--steel-lit); }
+}
+
+/* Impact. */
+.scene-art.is-smashing .shake { animation: bench-shake 460ms 200ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes bench-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(calc(var(--shake) * -1), calc(var(--shake) * 0.5)); }
+  33% { transform: translate(var(--shake), calc(var(--shake) * -0.4)); }
+  52% { transform: translate(calc(var(--shake) * -0.6), 0); }
+  76% { transform: translate(calc(var(--shake) * 0.35), 0); }
+}
+
+.scene-art.is-wrecked .avo-wrap { transform: translate(150px, 158px) scale(1.45, 0.14) translate(-150px, -158px); }
+.scene-art.is-wrecked .avo-pulp ellipse { opacity: 1; }
+.scene-art.is-wrecked .avo-stone { animation: stone-out 900ms cubic-bezier(0.2, 0.6, 0.4, 1) forwards; }
+@keyframes stone-out {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  10% { opacity: 1; }
+  100% { opacity: 1; transform: translate(78px, 18px) rotate(420deg); }
+}
+
+.impact-flash circle { fill: var(--paper); opacity: 0; }
+.scene-art.is-smashing .impact-flash circle { animation: flash 320ms 200ms ease-out; }
+@keyframes flash {
+  0% { opacity: 0.55; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* A tap when there was nothing to swing with. */
+.scene-art.is-tapping .hammer-arm { transform: rotate(14deg) !important; transition: transform 260ms ease-in-out; }
+.scene-art.is-tapping .avo-wrap { animation: avo-wobble 700ms 220ms ease-out; }
+@keyframes avo-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: translate(150px, 158px) rotate(-7deg) translate(-150px, -158px); }
+  60% { transform: translate(150px, 158px) rotate(5deg) translate(-150px, -158px); }
+}
+
+/* The guacamole. Blobs arc up and out, then fall onto the bench and stay. */
+.splat path { fill: var(--avo-flesh); }
+.splat-dark path { fill: var(--avo-skin); }
+.splat { opacity: 0; }
+
+.splat-field.is-flying .splat {
+  animation: splat-fly 700ms cubic-bezier(0.2, 0.7, 0.35, 1) var(--d) forwards;
+}
+@keyframes splat-fly {
+  0% { opacity: 1; transform: translate(0, 0) scale(0.15) rotate(0deg); }
+  55% { opacity: 1; transform: translate(calc(var(--dx) * 0.7), var(--dy)) scale(calc(var(--s) * 0.85)) rotate(calc(var(--r) * 0.5)); }
+  100% { opacity: 1; transform: translate(var(--dx), calc(var(--dy) * 0.25 + 62px)) scale(var(--s)) rotate(var(--r)); }
+}
+.splat-field.is-still .splat {
+  opacity: 1;
+  transform: translate(var(--dx), calc(var(--dy) * 0.25 + 62px)) scale(var(--s)) rotate(var(--r));
+}
+
+/* And the bit that lands on the lens. */
+.lens-splat {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(var(--s)) rotate(var(--r));
+  animation: lens-hit 300ms var(--d) ease-out forwards;
+}
+.lens-splat svg { width: 100%; height: 100%; }
+.lens-splat path { fill: var(--avo-flesh-lit); opacity: 0.82; }
+@keyframes lens-hit {
+  0% { opacity: 0; transform: scale(calc(var(--s) * 0.2)) rotate(var(--r)); }
+  70% { opacity: 0.95; transform: scale(calc(var(--s) * 1.25)) rotate(var(--r)); }
+  100% { opacity: 0.9; transform: scale(var(--s)) rotate(var(--r)); }
+}
+
+/* The verdict line under the smash. */
+.verdict {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  color: var(--avo-flesh);
+  margin: 4px 0 10px;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 480px) {
+  .scene { margin-bottom: 16px; }
+  .verdict { font-size: 1.15rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-art *,
+  .scene-meter *,
+  .lens-splat {
+    animation: none !important;
+    transition: none !important;
+  }
+  .lens-splat { opacity: 0.9; }
+}
+
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="brand">
+        <span class="brand-mark">ie/ei</span>
+        <span class="brand-name">Contrastive Phonics</span>
+      </div>
+      <div id="stage-dots" class="stage-dots" aria-label="Progress"></div>
+    </div>
+  </header>
+
+  <div id="scoreboard" class="scoreboard">&#9733; 0 pts</div>
+
+  <div id="global-banner" class="global-banner" hidden></div>
+
+  <main id="exercise-root" class="exercise-root">
+    <!-- Rendered by the engine below -->
+  </main>
+
+  <footer class="app-footer">
+    Phase 1 pilot build &mdash; one level, in-session only, no accounts or saved progress.
+  </footer>
+
+<script>
+/**
+ * LEVELS
+ * ------
+ * Each entry is one contrastive-phonics level. The engine (app.js) reads
+ * this structure generically — it does not know anything about German,
+ * "ie" or "ei" specifically. To add Level 2, append another object with
+ * the same shape; nothing in app.js or index.html needs to change.
+ *
+ * Word bank rule (see build notes at the bottom of this file):
+ * every word in patternA.words must contain patternA.grapheme exactly
+ * once, spelled unambiguously as that grapheme (same for patternB).
+ * Words that are phonetically similar but spelled a third way (e.g.
+ * "Bayern" for the /aɪ/ sound) must NOT appear here — that ambiguity is
+ * fine for a later "spot the odd spelling" level, but would make this
+ * level's discrimination/spelling pair misleading.
+ */
+
+const LEVELS = [
+  {
+    id: "ie-ei",
+    title: '"ie" vs "ei"',
+    patternA: {
+      grapheme: "ie",
+      soundHint: "long ee", // plain-English description, no IPA notation
+      label: "long ee, like English 'see'",
+      exampleWord: "Liebe",
+      words: ["Liebe", "Bier", "Fieber", "Tier", "viel", "Brief", "Miete", "Sie", "hier"]
+    },
+    patternB: {
+      grapheme: "ei",
+      soundHint: "eye",
+      label: "like English 'eye'",
+      exampleWord: "Bein",
+      words: ["Bein", "klein", "Arbeit", "Wein", "Kleid", "Eis", "Reise", "Weise", "ein", "mein"]
+    },
+    mnemonic: "When i and e go walking, the last one does the talking.",
+    production: {
+      words: ["ein", "Bein", "Tier", "Bier", "Brief", "klein"]
+    },
+    spelling: {
+      words: ["ein", "Bein", "Tier", "Bier", "Brief", "klein"]
+    },
+    dictation: {
+      instructions: "Listen to each word — it's read slowly. Write it in your Homework book.",
+      words: ["Eis", "Tier", "hier", "klein", "mein", "sie"]
+    }
+  }
+];
+
+/**
+ * BUILD NOTES (for whoever edits this file later):
+ * - "viel" and "Sie" are the shortest ie-words; short items make good
+ *   discrimination items but are less interesting to record aloud
+ *   — kept in for now, revisit if Production stage drags for these two.
+ * - "ein", "hier" and "mein" were added to the patternB/patternA word
+ *   banks specifically to support the Production/Spelling/Dictation word
+ *   lists below — they also widen the pool the Listen stage samples from.
+ * - Production and Spelling currently use the identical 6-word list
+ *   (ein, Bein, Tier, Bier, Brief, klein) — same words, heard in Speak
+ *   then spelled in Spell. Give Spelling its own list here if you'd
+ *   rather they not overlap.
+ * - Dictation is NOT marked by the app — students write each word in
+ *   their Homework book and the teacher checks it — so its 6-word list
+ *   isn't filtered for "untaught" German letter sounds the way the
+ *   in-app graded exercises are. Worth noting: "sie" starts with the
+ *   same word-initial s → z sound as "Sie" — harmless since nothing
+ *   here grades spelling, but flag it if that sound hasn't been taught
+ *   yet and you'd rather swap it out.
+ * - This word list is a first draft and has not been checked against a
+ *   frequency list or the AQA GCSE German vocabulary list — sanity-check
+ *   before scaling to more levels.
+ */
+
+</script>
+
+<script>
+/**
+ * Reward scenes — the two animated bits of gamification.
+ * ------------------------------------------------------
+ * Kept out of app.js on purpose: app.js is the teaching engine and should
+ * stay readable without wading through SVG. This file has no idea what a
+ * phoneme is — it just gets told "one right answer happened" and reacts.
+ *
+ * Two scenes:
+ *   Scenes.penguin({ total, fed })  → Listen stage. Each correct answer
+ *                                     throws a fish; the penguin eats it.
+ *   Scenes.hammer({ total, charge }) → Spell stage. Each correct answer
+ *                                      winds the hammer up a notch; the
+ *                                      last question drops it on the
+ *                                      avocado. Splatter scales with the
+ *                                      number of correct answers.
+ *
+ * Both return an object with a `.node` (drop it in the card) plus methods.
+ * Both rebuild cleanly on every re-render — app.js wipes the DOM between
+ * questions, so the scene is constructed from the running totals held in
+ * state.game, never from anything stored in here.
+ *
+ * Reduced motion: every animation below has a still equivalent. Nothing
+ * is communicated by movement alone — the counter row and the status line
+ * carry the same information in text.
+ */
+
+(function () {
+  "use strict";
+
+  const REDUCED =
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function make(html) {
+    const wrap = document.createElement("div");
+    wrap.innerHTML = html.trim();
+    return wrap.firstElementChild;
+  }
+
+  // Restart a CSS animation on an element that may already have run it.
+  function replay(node, className) {
+    node.classList.remove(className);
+    void node.offsetWidth; // force reflow so the animation restarts
+    node.classList.add(className);
+  }
+
+  // A row of little pips under each scene — the honest read-out of how
+  // many words have actually been mastered, which the artwork only hints at.
+  function meterRow(total, filled, glyph) {
+    const row = document.createElement("div");
+    row.className = "scene-meter";
+    for (let i = 0; i < total; i++) {
+      const pip = document.createElement("span");
+      pip.className = "pip" + (i < filled ? " pip-full" : "");
+      pip.innerHTML = glyph;
+      row.appendChild(pip);
+    }
+    return row;
+  }
+
+  const FISH_PIP =
+    '<svg viewBox="0 0 26 14" aria-hidden="true"><path d="M2,7 C6,1 14,1 18,7 C14,13 6,13 2,7 Z M18,7 L24,2 L24,12 Z"/></svg>';
+
+  const CHARGE_PIP =
+    '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7,2 L12,9 L8.5,9 L8.5,12 L5.5,12 L5.5,9 L2,9 Z"/></svg>';
+
+  // ==========================================================================
+  // Scene 1 — Feed the penguin (Listen stage)
+  // ==========================================================================
+
+  const PENGUIN_ART = `
+<svg class="scene-art" viewBox="0 0 300 176" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="peng-clip"><rect x="0" y="0" width="300" height="176" rx="10"/></clipPath>
+  </defs>
+  <g clip-path="url(#peng-clip)">
+    <rect class="peng-sky" x="0" y="0" width="300" height="176" rx="10"/>
+
+    <path class="ice-far" d="M18,150 L52,112 L86,150 Z"/>
+    <path class="ice-far" d="M212,150 L246,120 L282,150 Z"/>
+
+    <path class="ice" d="M0,148 C42,138 74,143 112,140 C154,136 202,142 242,139 C270,137 288,141 300,145 L300,176 L0,176 Z"/>
+    <path class="ice-shade" d="M0,158 C60,152 120,156 180,153 C230,151 270,155 300,153 L300,176 L0,176 Z"/>
+
+    <g class="peng">
+      <path class="peng-body" d="M141,50 C111,50 94,79 94,110 C94,139 114,153 141,153 C168,153 188,139 188,110 C188,79 171,50 141,50 Z"/>
+
+      <ellipse class="peng-foot" cx="126" cy="153" rx="14" ry="6"/>
+      <ellipse class="peng-foot" cx="158" cy="153" rx="14" ry="6"/>
+
+      <g class="peng-belly-wrap">
+        <ellipse class="peng-belly" cx="143" cy="118" rx="31" ry="33"/>
+      </g>
+
+      <path class="peng-wing peng-wing-l" d="M99,84 C87,95 85,124 95,143 C99,147 106,144 104,138 C96,120 98,101 105,88 Z"/>
+      <path class="peng-wing peng-wing-r" d="M185,84 C197,95 199,124 189,143 C185,147 178,144 180,138 C188,120 186,101 179,88 Z"/>
+
+      <g class="peng-face">
+        <circle class="peng-eye-white" cx="127" cy="86" r="9"/>
+        <circle class="peng-eye-white" cx="154" cy="84" r="10"/>
+        <g class="peng-pupils">
+          <circle class="peng-pupil" cx="129" cy="87" r="4.4"/>
+          <circle class="peng-pupil" cx="156" cy="85" r="4.8"/>
+        </g>
+        <g class="peng-brows">
+          <path class="peng-brow" d="M120,74 L135,78"/>
+          <path class="peng-brow" d="M164,71 L148,76"/>
+        </g>
+      </g>
+
+      <g transform="translate(141,100)">
+        <path class="peng-beak beak-upper" d="M-4,-4 L30,2 L-4,4 Z"/>
+        <g class="beak-lower">
+          <path class="peng-beak" d="M-4,4 L30,2 L-4,13 Z"/>
+        </g>
+      </g>
+
+      <g class="peng-note" transform="translate(196,72)">
+        <text x="0" y="0" class="note-glyph">&#9834;</text>
+      </g>
+    </g>
+
+    <g class="fish-flyer">
+      <g class="fish-arc">
+        <g class="fish-spin">
+          <path class="fish-body" d="M-14,0 C-8,-9 6,-9 12,0 C6,9 -8,9 -14,0 Z"/>
+          <path class="fish-tail" d="M12,0 L22,-7 L22,7 Z"/>
+          <circle class="fish-eye" cx="-7" cy="-2" r="1.8"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>`;
+
+  function penguinScene(opts) {
+    const total = opts.total;
+    let fed = opts.fed || 0;
+
+    const node = document.createElement("div");
+    node.className = "scene scene-penguin";
+    node.appendChild(make(PENGUIN_ART));
+
+    const meter = meterRow(total, fed, FISH_PIP);
+    node.appendChild(meter);
+
+    const status = document.createElement("p");
+    status.className = "scene-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    node.appendChild(status);
+
+    const art = node.querySelector(".scene-art");
+    const peng = node.querySelector(".peng");
+    const belly = node.querySelector(".peng-belly-wrap");
+
+    function setBelly() {
+      // Grows to about a third bigger over the whole stage — enough to
+      // notice at the end, not enough to distract question to question.
+      const grown = 1 + 0.3 * (total ? Math.min(fed, total) / total : 0);
+      belly.style.transform = `translate(143px,118px) scale(${grown.toFixed(3)}) translate(-143px,-118px)`;
+    }
+
+    function setStatus() {
+      const left = total - fed;
+      status.textContent =
+        fed >= total
+          ? `Fish caught: ${fed} of ${total} — that penguin is stuffed.`
+          : `Fish caught: ${fed} of ${total} — ${left} word${left === 1 ? "" : "s"} still to get right.`;
+    }
+
+    setBelly();
+    setStatus();
+    if (fed >= total && total > 0) art.classList.add("is-stuffed");
+
+    return {
+      node: node,
+
+      /** Correct answer: throw a fish, penguin eats it, belly grows. */
+      feed: function () {
+        fed++;
+        setBelly();
+        setStatus();
+        const pips = meter.querySelectorAll(".pip");
+        const pip = pips[Math.min(fed, total) - 1];
+        if (pip) {
+          pip.classList.add("pip-full");
+          if (!REDUCED) replay(pip, "pip-pop");
+        }
+        if (fed >= total) art.classList.add("is-stuffed");
+        if (REDUCED) {
+          art.classList.add("is-happy");
+          return;
+        }
+        replay(art, "is-feeding");
+        window.setTimeout(() => {
+          art.classList.add("is-happy");
+          replay(peng, "is-hopping");
+        }, 560);
+        window.setTimeout(() => art.classList.remove("is-happy"), 2200);
+      },
+
+      /** Wrong answer: the fish falls short. Brief, and never scolding —
+       *  the written explanation next to it is the part that matters. */
+      miss: function () {
+        if (REDUCED) return;
+        replay(art, "is-missing");
+        window.setTimeout(() => art.classList.remove("is-missing"), 1400);
+      }
+    };
+  }
+
+  // ==========================================================================
+  // Scene 2 — Hammer and avocado (Spell stage)
+  // ==========================================================================
+
+  // Geometry note for anyone editing the artwork: the hammer pivots at
+  // (245,148). At rotate(0) the head sits exactly on top of the avocado —
+  // that is the impact frame. Bigger angles wind it back up and to the
+  // right. Move the avocado and you must re-check that resting angle.
+  const HAMMER_ART = `
+<svg class="scene-art" viewBox="0 0 300 190" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="hammer-clip"><rect x="0" y="0" width="300" height="190" rx="10"/></clipPath>
+  </defs>
+  <g clip-path="url(#hammer-clip)">
+    <rect class="bench-back" x="0" y="0" width="300" height="190" rx="10"/>
+
+    <rect class="bench" x="0" y="156" width="300" height="34"/>
+    <path class="bench-edge" d="M0,156 L300,156"/>
+    <path class="bench-grain" d="M0,168 L300,165 M0,180 L300,182"/>
+
+    <g class="shake">
+      <g class="avo-pulp"><ellipse cx="150" cy="154" rx="32" ry="9"/></g>
+
+      <g class="avo-wrap">
+        <g class="avo">
+          <path class="avo-skin" d="M150,92 C141,92 136,102 136,111 C136,119 127,123 125,134 C121,149 134,159 150,159 C166,159 179,149 175,134 C173,123 164,119 164,111 C164,102 159,92 150,92 Z"/>
+          <path class="avo-shine" d="M142,104 C136,112 133,122 134,132"/>
+        </g>
+      </g>
+
+      <g class="avo-stone"><circle cx="150" cy="136" r="12"/></g>
+
+      <g class="splat-field" transform="translate(150,100)"></g>
+
+      <g transform="translate(232,150)">
+        <g class="hammer-arm">
+          <line class="hammer-handle" x1="5" y1="5" x2="-71" y2="-70"/>
+          <line class="hammer-grip" x1="7" y1="7" x2="-20" y2="-19"/>
+          <g transform="translate(-82,-50) rotate(24)">
+            <rect class="hammer-head" x="-14" y="-50" width="28" height="50" rx="6"/>
+            <rect class="hammer-band" x="-14" y="-32" width="28" height="12"/>
+            <rect class="hammer-face" x="-14" y="-11" width="28" height="11" rx="4"/>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <g class="impact-flash"><circle cx="150" cy="102" r="64"/></g>
+  </g>
+</svg>`;
+
+  const REST_DEG = 22; // hovering just clear of the avocado
+  const WOUND_DEG = 60; // fully wound back
+
+  function hammerScene(opts) {
+    const total = opts.total;
+    let charge = opts.charge || 0;
+    const smashed = !!opts.smashed;
+
+    const node = document.createElement("div");
+    node.className = "scene scene-hammer";
+    node.appendChild(make(HAMMER_ART));
+
+    const meter = meterRow(total, charge, CHARGE_PIP);
+    node.appendChild(meter);
+
+    const status = document.createElement("p");
+    status.className = "scene-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    node.appendChild(status);
+
+    const art = node.querySelector(".scene-art");
+    const arm = node.querySelector(".hammer-arm");
+    const field = node.querySelector(".splat-field");
+
+    function angleFor(c) {
+      return REST_DEG + (WOUND_DEG - REST_DEG) * (total ? Math.min(c, total) / total : 0);
+    }
+
+    function setArm(c) {
+      arm.style.transform = `rotate(${angleFor(c).toFixed(2)}deg)`;
+    }
+
+    function setStatus() {
+      const left = total - charge;
+      status.textContent =
+        left > 0
+          ? `Hammer wound back: ${charge} of ${total}. ${left} more to get right before it drops.`
+          : `Hammer fully wound back: ${charge} of ${total}.`;
+    }
+
+    setArm(charge);
+    setStatus();
+
+    // Splatter is drawn from the same routine whether it is animating in
+    // or being restored on the summary card, so the aftermath always
+    // matches what the student just watched.
+    function paintSplatter(ratio, still) {
+      if (ratio <= 0) return; // nothing was swung; nothing splatters
+      const blobs = 4 + Math.round(ratio * 26);
+      for (let i = 0; i < blobs; i++) {
+        const angle = rand(-Math.PI * 0.95, -Math.PI * 0.05);
+        const spread = (26 + ratio * 96) * rand(0.45, 1);
+        const dx = Math.cos(angle) * spread * rand(0.9, 1.6);
+        const dy = Math.sin(angle) * spread * rand(0.55, 1);
+        const SVGNS = "http://www.w3.org/2000/svg";
+        const g = document.createElementNS(SVGNS, "g");
+        g.setAttribute("class", "splat" + (i % 5 === 0 ? " splat-dark" : ""));
+        g.style.setProperty("--dx", dx.toFixed(1) + "px");
+        g.style.setProperty("--dy", dy.toFixed(1) + "px");
+        g.style.setProperty("--s", rand(0.35, 0.35 + ratio * 1.15).toFixed(2));
+        g.style.setProperty("--r", rand(-180, 180).toFixed(0) + "deg");
+        g.style.setProperty("--d", (still ? 0 : rand(0, 130)).toFixed(0) + "ms");
+        const blob = document.createElementNS(SVGNS, "path");
+        blob.setAttribute("d", "M0,-9 C6,-10 12,-5 11,1 C10,7 3,10 -2,9 C-8,8 -11,3 -10,-3 C-9,-7 -5,-8 0,-9 Z");
+        g.appendChild(blob);
+        field.appendChild(g);
+      }
+      // A few land on the lens.
+      const lensCount = Math.round(ratio * 5);
+      for (let i = 0; i < lensCount; i++) {
+        const lens = document.createElement("span");
+        lens.className = "lens-splat";
+        lens.style.left = rand(8, 84).toFixed(1) + "%";
+        lens.style.top = rand(6, 70).toFixed(1) + "%";
+        lens.style.setProperty("--s", rand(0.7, 1.5 + ratio).toFixed(2));
+        lens.style.setProperty("--r", rand(0, 360).toFixed(0) + "deg");
+        lens.style.setProperty("--d", (still ? 0 : rand(40, 220)).toFixed(0) + "ms");
+        lens.innerHTML =
+          '<svg viewBox="-14 -14 28 28" aria-hidden="true"><path d="M0,-11 C7,-12 13,-6 12,1 C11,8 4,12 -2,11 C-9,10 -13,4 -12,-3 C-11,-8 -6,-10 0,-11 Z"/></svg>';
+        node.appendChild(lens);
+      }
+      field.classList.add(still ? "is-still" : "is-flying");
+    }
+
+    if (smashed) {
+      // Rebuilt after the fact (summary card): show the aftermath, no replay.
+      // A zero-score run never landed a blow, so the avocado is still whole
+      // here — the summary has to match what they actually watched.
+      const ratio = opts.ratio || 0;
+      if (ratio > 0) {
+        art.classList.add("is-wrecked");
+        arm.style.transform = "rotate(6deg)";
+        paintSplatter(ratio, true);
+      } else {
+        arm.style.transform = "rotate(14deg)";
+      }
+      status.textContent = verdictFor(ratio).status;
+    }
+
+    return {
+      node: node,
+
+      /** Correct answer: wind the hammer back one notch. */
+      chargeUp: function () {
+        charge++;
+        setArm(charge);
+        setStatus();
+        const pips = meter.querySelectorAll(".pip");
+        const pip = pips[Math.min(charge, total) - 1];
+        if (pip) {
+          pip.classList.add("pip-full");
+          if (!REDUCED) replay(pip, "pip-pop");
+        }
+        if (!REDUCED) replay(art, "is-charging");
+      },
+
+      /**
+       * Last question of the stage: let it fall. `ratio` is correct
+       * answers ÷ words, and drives how far the guacamole travels.
+       * Resolves once the mess has settled so app.js can reveal the
+       * verdict line underneath.
+       */
+      smash: function (ratio) {
+        return new Promise((resolve) => {
+          const verdict = verdictFor(ratio);
+          status.textContent = verdict.status;
+
+          if (ratio <= 0) {
+            // Nothing to swing with. The avocado gets a tap and survives.
+            art.classList.add("is-tapping");
+            window.setTimeout(resolve, REDUCED ? 0 : 700);
+            return;
+          }
+
+          if (REDUCED) {
+            art.classList.add("is-wrecked");
+            arm.style.transform = "rotate(6deg)";
+            paintSplatter(ratio, true);
+            resolve();
+            return;
+          }
+
+          art.style.setProperty("--shake", (2 + ratio * 6).toFixed(1) + "px");
+          art.classList.add("is-smashing");
+          arm.style.transform = "rotate(-4deg)";
+
+          window.setTimeout(() => {
+            art.classList.add("is-wrecked");
+            paintSplatter(ratio, false);
+            arm.style.transform = "rotate(6deg)";
+          }, 240);
+
+          window.setTimeout(resolve, 1250);
+        });
+      }
+    };
+  }
+
+  /**
+   * Wording for the pay-off. Deliberately not scored out of ten and not
+   * scolding at the bottom end — a student who got none right is being
+   * pointed at another go, not told off.
+   */
+  function verdictFor(ratio) {
+    if (ratio >= 0.999)
+      return { headline: "GUACAMOLE.", status: "Every word right — total avocado devastation." };
+    if (ratio >= 0.8) return { headline: "Properly flattened.", status: "A serious splat." };
+    if (ratio >= 0.5) return { headline: "Squashed.", status: "A decent splat." };
+    if (ratio >= 0.25) return { headline: "A bit of a dent.", status: "The avocado is bruised, not beaten." };
+    if (ratio > 0) return { headline: "Barely a mark.", status: "That avocado got off lightly." };
+    return {
+      headline: "The avocado survives.",
+      status: "No correct answers meant nothing to swing with — go again and flatten it."
+    };
+  }
+
+  window.Scenes = {
+    penguin: penguinScene,
+    hammer: hammerScene,
+    verdictFor: verdictFor,
+    reducedMotion: REDUCED
+  };
+})();
+
+</script>
+
+<script>
+/**
+ * Contrastive Phonics — core exercise engine (Phase 1)
+ *
+ * This file knows nothing German-specific — it reads whatever is in
+ * LEVELS (data.js) and drives the five-stage loop. Adding levels 2-14
+ * later is a data.js change only.
+ *
+ * Extension point for later phases: INTERLEAVED REVIEW.
+ * Once LEVELS.length > 1, insert a review stage that samples words from
+ * previously-completed levels before the "spelling" stage of a new
+ * level. See buildStageList() below for exactly where that slots in.
+ */
+
+// ---- Tunable constants -----------------------------------------------
+// How many words per pattern the Listen (discrimination) stage drills.
+// 3+3 = 6 questions, sampled from the full patternA/patternB word lists.
+const DISCRIMINATION_WORDS_PER_PATTERN = 3;
+
+// Fallback only: used for the Production stage if a level doesn't define
+// an explicit production.words list in data.js. Levels here always
+// specify their own words, so this is just a safety net for future ones.
+const PRODUCTION_WORDS_PER_PATTERN = 3;
+
+// How many times a student can get a single word wrong before the app
+// lets them move on without mastering it (still logged for the summary).
+const MAX_ATTEMPTS_PER_WORD = 3;
+
+// ---- Small utilities -----------------------------------------------------
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function sample(arr, n) {
+  return shuffle(arr).slice(0, n);
+}
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") node.className = v;
+    else if (k === "html") node.innerHTML = v;
+    else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) {
+    if (c == null) continue;
+    node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  }
+  return node;
+}
+
+// ---- Text-to-speech --------------------------------------------------------
+
+const TTS = {
+  voice: null,
+  ready: false,
+  supported: "speechSynthesis" in window,
+  loadVoices() {
+    if (!this.supported) return;
+    const voices = speechSynthesis.getVoices();
+    if (!voices.length) return;
+    this.voice =
+      voices.find((v) => v.lang && v.lang.toLowerCase() === "de-de") ||
+      voices.find((v) => v.lang && v.lang.toLowerCase().startsWith("de")) ||
+      null;
+    this.ready = true;
+    document.dispatchEvent(new CustomEvent("tts-ready"));
+  },
+  speak(text, rate) {
+    if (!this.supported) return false;
+    speechSynthesis.cancel(); // avoid queueing pile-ups on rapid taps
+    const utter = new SpeechSynthesisUtterance(text);
+    if (this.voice) {
+      utter.voice = this.voice;
+      utter.lang = this.voice.lang;
+    } else {
+      utter.lang = "de-DE"; // best-effort even with no German voice installed
+    }
+    utter.rate = rate || 0.95;
+    speechSynthesis.speak(utter);
+    return true;
+  }
+};
+
+if (TTS.supported) {
+  TTS.loadVoices();
+  speechSynthesis.addEventListener("voiceschanged", () => TTS.loadVoices());
+}
+
+function playAudioButton(text, label = "▶ Play", rate) {
+  const btn = el("button", { class: "btn btn-audio" }, label);
+  btn.addEventListener("click", () => {
+    if (!TTS.supported) {
+      flashUnsupported(btn);
+      return;
+    }
+    if (!TTS.voice) warnNoGermanVoice();
+    TTS.speak(text, rate);
+  });
+  return btn;
+}
+
+let voiceWarningShown = false;
+function warnNoGermanVoice() {
+  if (voiceWarningShown) return;
+  voiceWarningShown = true;
+  const banner = document.getElementById("global-banner");
+  banner.textContent =
+    "No German voice was found on this device, so audio may sound off or use a default voice. The exercise still works — check System/Browser settings for a German (de-DE) voice if this matters.";
+  banner.hidden = false;
+}
+
+function flashUnsupported(btn) {
+  btn.textContent = "Audio not supported here";
+  btn.disabled = true;
+}
+
+// ---- Recording -------------------------------------------------------------
+// Fixed design: start() only starts the recorder and returns immediately.
+// stopAndGetUrl() is a separate call, triggered by the Stop button, that
+// resolves once the 'stop' event has actually fired. Earlier versions
+// awaited the stop event from inside start() itself, which meant the Stop
+// button's click handler wasn't attached until after start() had already
+// finished — a deadlock, since nothing could ever fire 'stop'.
+
+const Recorder = {
+  supported: !!(navigator.mediaDevices && window.MediaRecorder),
+  stream: null,
+  recorder: null,
+  chunks: [],
+  currentUrl: null,
+
+  async ensureStream() {
+    if (this.stream) return this.stream;
+    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return this.stream;
+  },
+
+  async start() {
+    const stream = await this.ensureStream();
+    this.chunks = [];
+    this.recorder = new MediaRecorder(stream);
+    this.recorder.addEventListener("dataavailable", (e) => {
+      if (e.data.size > 0) this.chunks.push(e.data);
+    });
+    this.recorder.start();
+  },
+
+  stopAndGetUrl() {
+    return new Promise((resolve) => {
+      if (!this.recorder || this.recorder.state === "inactive") {
+        resolve(null);
+        return;
+      }
+      this.recorder.addEventListener(
+        "stop",
+        () => {
+          const blob = new Blob(this.chunks, { type: "audio/webm" });
+          this.discardUrl();
+          this.currentUrl = URL.createObjectURL(blob);
+          resolve(this.currentUrl);
+        },
+        { once: true }
+      );
+      this.recorder.stop();
+    });
+  },
+
+  discardUrl() {
+    // Nothing is persisted beyond the current word, per the no-storage
+    // requirement — every previous recording is explicitly freed.
+    if (this.currentUrl) {
+      URL.revokeObjectURL(this.currentUrl);
+      this.currentUrl = null;
+    }
+  },
+
+  releaseMic() {
+    if (this.stream) {
+      this.stream.getTracks().forEach((t) => t.stop());
+      this.stream = null;
+    }
+  }
+};
+
+// ---- Gamification (lightweight, in-session only — nothing persisted) -----
+
+const AFFIRMATIONS = ["Correct!", "Nice one!", "Got it!", "Well done!", "Spot on!", "Exactly right!"];
+function pickAffirmation() {
+  return AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)];
+}
+
+function renderScoreboard() {
+  const bar = document.getElementById("scoreboard");
+  if (!bar) return;
+  bar.textContent =
+    `★ ${state.score} pts` + (state.streak >= 2 ? `   🔥 ${state.streak} in a row` : "");
+}
+
+function awardPoints(n) {
+  state.score += n;
+  renderScoreboard();
+}
+
+function registerCorrectStreak() {
+  state.streak++;
+  if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+  renderScoreboard();
+}
+
+function registerWrongStreak() {
+  state.streak = 0;
+  renderScoreboard();
+}
+
+function starsFor(ratio) {
+  if (ratio >= 0.9) return 3;
+  if (ratio >= 0.7) return 2;
+  if (ratio >= 0.4) return 1;
+  return 0;
+}
+
+// ---- Drill queue (discrimination + encode share this) ---------------------
+// A "drill" runs the word list once, then automatically loops any wrong
+// answers back in as a second (or third) round, so mistakes get repeated
+// before the stage ends. A word that's wrong MAX_ATTEMPTS_PER_WORD times
+// is let through without being mastered, so nobody gets stuck.
+
+function newDrillState(items) {
+  return {
+    round: shuffle(items),
+    idx: 0,
+    attempts: {},
+    firstPassCorrect: 0,
+    totalWords: items.length,
+    movedOn: [],
+    nextRound: [],
+    roundNumber: 1
+  };
+}
+
+function drillKey(item) {
+  return item.pattern + ":" + item.word;
+}
+
+function currentDrillItem(drill) {
+  return drill.round[drill.idx];
+}
+
+function isDrillDone(drill) {
+  return drill.idx >= drill.round.length && drill.nextRound.length === 0;
+}
+
+// Records the answer's outcome and returns the attempt number (1-based)
+// for THIS word. Called once, immediately when the student answers.
+function recordDrillAnswer(drill, item, wasCorrect) {
+  const key = drillKey(item);
+  const attemptNumber = (drill.attempts[key] || 0) + 1;
+  drill.attempts[key] = attemptNumber;
+
+  if (wasCorrect) {
+    if (attemptNumber === 1) drill.firstPassCorrect++;
+  } else if (attemptNumber >= MAX_ATTEMPTS_PER_WORD) {
+    drill.movedOn.push(item);
+  } else {
+    drill.nextRound.push(item);
+  }
+  return attemptNumber;
+}
+
+// Moves to the next word, rolling missed words into a new round once the
+// current one is exhausted. Called when the student taps "Next word".
+function advanceDrillIndex(drill) {
+  drill.idx++;
+  if (drill.idx >= drill.round.length && drill.nextRound.length > 0) {
+    drill.round = shuffle(drill.nextRound);
+    drill.nextRound = [];
+    drill.idx = 0;
+    drill.roundNumber++;
+  }
+}
+
+function drillSummaryCard(drill, label, onContinue, continueLabel, sceneNode) {
+  const stars = starsFor(drill.totalWords ? drill.firstPassCorrect / drill.totalWords : 0);
+  const card = el("div", { class: "card" }, [
+    sceneNode,
+    el("h2", {}, `${label} — done`),
+    el("div", { class: "stars" }, "★".repeat(stars) + "☆".repeat(3 - stars)),
+    el("p", {}, `${drill.firstPassCorrect} / ${drill.totalWords} correct on the first try.`)
+  ]);
+  if (drill.movedOn.length) {
+    card.appendChild(
+      el(
+        "p",
+        { class: "muted" },
+        "Needs more practice next time: " + drill.movedOn.map((w) => w.word).join(", ")
+      )
+    );
+  }
+  card.appendChild(el("button", { class: "btn btn-primary", onclick: onContinue }, continueLabel));
+  return card;
+}
+
+// Builds the kid-friendly explanation shown after a wrong answer, e.g.
+// "When i and e go walking, the last one does the talking. The correct
+// word was Arbeit. This word has the eye sound, so it needs the spelling ei."
+function explainWrong(level, item, correctPattern) {
+  return `${level.mnemonic} The correct word was "${item.word}". This word has the ${correctPattern.soundHint} sound, so it needs the spelling "${correctPattern.grapheme}".`;
+}
+
+// ---- Reward scenes: safe accessors ---------------------------------------
+// game.js is decoration. If it fails to load — missing file, blocked script,
+// typo in the filename — the lesson must still run, so every call routes
+// through here and quietly falls back to doing nothing.
+
+const NO_SCENE = {
+  node: null,
+  feed: function () {},
+  miss: function () {},
+  chargeUp: function () {},
+  smash: function () { return Promise.resolve(); }
+};
+
+function makeScene(kind, opts) {
+  if (window.Scenes && typeof window.Scenes[kind] === "function") {
+    try {
+      return window.Scenes[kind](opts);
+    } catch (err) {
+      console.warn("Reward scene '" + kind + "' failed to build:", err);
+    }
+  }
+  return NO_SCENE;
+}
+
+// A no-op scene has no node, so every insertion point has to tolerate null.
+function appendScene(card, scene) {
+  if (scene && scene.node) card.appendChild(scene.node);
+}
+
+function sceneVerdict(ratio) {
+  if (window.Scenes && typeof window.Scenes.verdictFor === "function") {
+    return window.Scenes.verdictFor(ratio);
+  }
+  return { headline: "", status: "" };
+}
+
+// ---- Engine state ----------------------------------------------------
+
+const state = {
+  level: LEVELS[0],
+  stageIndex: 0,
+  stages: [],
+  discrimination: { drill: null },
+  production: { queue: [], i: 0 },
+  spelling: { drill: null },
+  score: 0,
+  streak: 0,
+  bestStreak: 0,
+  // Reward-scene counters. Held here rather than inside the scenes
+  // themselves because app.js wipes the DOM between questions — the
+  // scene is rebuilt from these numbers every render.
+  game: { fish: 0, hammer: 0, smashed: false, ratio: 0 }
+};
+
+const dictationPlayed = new Set();
+
+function buildStageList() {
+  // Extension point: once LEVELS.length > 1, splice an "interleaved
+  // review" stage in here, between "production" and "spelling", sampling
+  // words from levels[0..levelIndex-1]. Left as a single linear list for
+  // Phase 1 since there is nothing yet to interleave.
+  return ["intro", "discrimination", "production", "spelling", "final"];
+}
+
+// Balanced sample: perPattern words from each of patternA/patternB, so a
+// shortened drill still contrasts both patterns evenly rather than
+// skewing toward whichever one the random sample favours.
+function sampleWordList(level, perPattern) {
+  const wordsA = sample(level.patternA.words, perPattern).map((w) => ({ word: w, pattern: "A" }));
+  const wordsB = sample(level.patternB.words, perPattern).map((w) => ({ word: w, pattern: "B" }));
+  return [...wordsA, ...wordsB];
+}
+
+// Production reads its word list straight from data.js (level.production.words)
+// so a teacher can pin the exact words students record. Falls back to a
+// balanced sample if a level doesn't define one.
+function productionWordList(level) {
+  if (level.production && level.production.words && level.production.words.length) {
+    return level.production.words;
+  }
+  const wordsA = sample(level.patternA.words, PRODUCTION_WORDS_PER_PATTERN);
+  const wordsB = sample(level.patternB.words, PRODUCTION_WORDS_PER_PATTERN);
+  return [...wordsA, ...wordsB];
+}
+
+// Same idea for the Spelling stage: an explicit level.spelling.words list,
+// tagged with its A/B pattern (needed for the wrong-answer explanation),
+// falling back to the full word bank if a level doesn't define one.
+function spellingDrillItems(level) {
+  const words =
+    level.spelling && level.spelling.words && level.spelling.words.length
+      ? level.spelling.words
+      : [...level.patternA.words, ...level.patternB.words];
+  return words.map((w) => ({
+    word: w,
+    pattern: level.patternA.words.includes(w) ? "A" : "B"
+  }));
+}
+
+function patternOf(level, key) {
+  return key === "A" ? level.patternA : level.patternB;
+}
+
+function init() {
+  state.stages = buildStageList();
+  state.stageIndex = 0;
+  renderScoreboard();
+  renderStageDots();
+  renderCurrentStage();
+}
+
+// ---- Rendering shell ---------------------------------------------------
+
+const root = document.getElementById("exercise-root");
+
+function renderStageDots() {
+  const wrap = document.getElementById("stage-dots");
+  wrap.innerHTML = "";
+  const labels = {
+    intro: "Rule",
+    discrimination: "Listen",
+    production: "Speak",
+    spelling: "Spell",
+    final: "Dictation"
+  };
+  state.stages.forEach((s, i) => {
+    const dot = el(
+      "div",
+      { class: "stage-dot" + (i === state.stageIndex ? " active" : i < state.stageIndex ? " done" : "") },
+      labels[s]
+    );
+    wrap.appendChild(dot);
+  });
+}
+
+function goToStage(i) {
+  state.stageIndex = i;
+  renderStageDots();
+  renderCurrentStage();
+  root.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function nextStage() {
+  goToStage(Math.min(state.stageIndex + 1, state.stages.length - 1));
+}
+
+function renderCurrentStage() {
+  root.innerHTML = "";
+  const stage = state.stages[state.stageIndex];
+  if (stage === "intro") renderIntro();
+  else if (stage === "discrimination") renderDiscrimination();
+  else if (stage === "production") renderProduction();
+  else if (stage === "spelling") renderSpelling();
+  else if (stage === "final") renderFinal();
+}
+
+// ---- Stage 1: Rule introduction ----------------------------------------
+
+function renderIntro() {
+  const level = state.level;
+  const card = el("div", { class: "card intro-card" }, [
+    el("h2", {}, level.title),
+    el("p", { class: "mnemonic" }, `"${level.mnemonic}"`),
+    el("div", { class: "pattern-pair" }, [
+      renderPatternExample(level.patternA),
+      el("div", { class: "vs" }, "vs"),
+      renderPatternExample(level.patternB)
+    ]),
+    el("button", { class: "btn btn-primary", onclick: nextStage }, "I've got it — start listening →")
+  ]);
+  root.appendChild(card);
+}
+
+function renderPatternExample(pattern) {
+  return el("div", { class: "pattern-example" }, [
+    el("div", { class: "grapheme" }, `"${pattern.grapheme}"`),
+    el("div", { class: "sound-label" }, pattern.label),
+    el("div", { class: "example-word" }, pattern.exampleWord),
+    playAudioButton(pattern.exampleWord, "▶ Hear " + pattern.exampleWord)
+  ]);
+}
+
+// ---- Stage 2: Discrimination --------------------------------------------
+
+function renderDiscrimination() {
+  const level = state.level;
+  if (!state.discrimination.drill) {
+    state.discrimination.drill = newDrillState(sampleWordList(level, DISCRIMINATION_WORDS_PER_PATTERN));
+  }
+  const drill = state.discrimination.drill;
+
+  if (isDrillDone(drill)) {
+    const wellFed = makeScene("penguin", { total: drill.totalWords, fed: state.game.fish });
+    root.appendChild(
+      drillSummaryCard(drill, "Listening", nextStage, "Continue to speaking →", wellFed.node)
+    );
+    return;
+  }
+
+  const item = currentDrillItem(drill);
+  const pattern = patternOf(level, item.pattern);
+  const otherPattern = item.pattern === "A" ? level.patternB : level.patternA;
+  const buttons = shuffle([pattern, otherPattern]); // randomise button position each attempt
+  const attemptNumber = (drill.attempts[drillKey(item)] || 0) + 1;
+
+  const card = el("div", { class: "card" });
+  // The penguin goes above the question so the throw happens in view while
+  // they are still looking at the answer they just gave.
+  const scene = makeScene("penguin", { total: drill.totalWords, fed: state.game.fish });
+  appendScene(card, scene);
+  if (drill.idx === 0 && drill.roundNumber > 1) {
+    card.appendChild(el("div", { class: "round-banner" }, "Let's try the ones you missed again."));
+  }
+  card.appendChild(
+    el(
+      "div",
+      { class: "progress-line" },
+      `Word ${drill.idx + 1} of ${drill.round.length}` +
+        (attemptNumber > 1 ? ` — attempt ${attemptNumber} of ${MAX_ATTEMPTS_PER_WORD}` : "")
+    )
+  );
+  card.appendChild(el("h2", {}, "Which spelling did you hear?"));
+  card.appendChild(playAudioButton(item.word, "▶ Play word"));
+
+  const btnRow = el("div", { class: "choice-row" });
+  buttons.forEach((p) => {
+    const choice = el("button", { class: "btn btn-choice" }, `"${p.grapheme}" — ${p.soundHint} sound`);
+    choice.addEventListener("click", () =>
+      handleDiscriminationAnswer(choice, btnRow, p, pattern, item, drill, scene)
+    );
+    btnRow.appendChild(choice);
+  });
+  card.appendChild(btnRow);
+  card.appendChild(el("div", { class: "feedback", id: "disc-feedback" }));
+
+  root.appendChild(card);
+}
+
+function handleDiscriminationAnswer(choiceBtn, btnRow, chosenPattern, correctPattern, item, drill, scene) {
+  const feedback = document.getElementById("disc-feedback");
+  [...btnRow.children].forEach((b) => (b.disabled = true));
+  const correct = chosenPattern.grapheme === correctPattern.grapheme;
+  const attemptNumber = recordDrillAnswer(drill, item, correct);
+
+  feedback.innerHTML = "";
+  if (correct) {
+    choiceBtn.classList.add("correct");
+    registerCorrectStreak();
+    awardPoints(attemptNumber === 1 ? 10 : 5);
+    // Count first, animate second — they can hit "Next word" mid-throw and
+    // the fish must still be on the board when the scene rebuilds.
+    state.game.fish++;
+    scene.feed();
+    feedback.appendChild(el("p", { class: "feedback-text good" }, pickAffirmation()));
+  } else {
+    choiceBtn.classList.add("wrong");
+    registerWrongStreak();
+    scene.miss();
+    feedback.appendChild(el("p", { class: "feedback-text bad" }, explainWrong(state.level, item, correctPattern)));
+    feedback.appendChild(playAudioButton(item.word, "▶ Hear it again"));
+    if (attemptNumber >= MAX_ATTEMPTS_PER_WORD) {
+      feedback.appendChild(el("p", { class: "feedback-text muted" }, "That's three tries on this one — let's move on for now."));
+    }
+  }
+
+  const goBtn = el(
+    "button",
+    {
+      class: "btn btn-primary",
+      onclick: () => {
+        advanceDrillIndex(drill);
+        renderCurrentStage();
+      }
+    },
+    "Next word →"
+  );
+  feedback.appendChild(goBtn);
+}
+
+// ---- Stage 3: Production -------------------------------------------------
+
+function renderProduction() {
+  const level = state.level;
+  if (!state.production.queue.length) {
+    state.production.queue = shuffle(productionWordList(level).map((w) => ({ word: w })));
+    state.production.i = 0;
+  }
+  const p = state.production;
+  Recorder.discardUrl(); // never carry a recording across renders
+
+  if (p.i >= p.queue.length) {
+    Recorder.releaseMic();
+    root.appendChild(
+      el("div", { class: "card" }, [
+        el("h2", {}, "Speaking — done"),
+        el("button", { class: "btn btn-primary", onclick: nextStage }, "Continue to spelling →")
+      ])
+    );
+    return;
+  }
+
+  const item = p.queue[p.i];
+  const card = el("div", { class: "card" }, [
+    el("div", { class: "progress-line" }, `Word ${p.i + 1} of ${p.queue.length}`),
+    el("h2", {}, "Say this word aloud"),
+    el("div", { class: "example-word big" }, item.word)
+  ]);
+
+  const hint = el("div", { class: "muted hint" }, "Record yourself and play a recording back to unlock \"Next word\".");
+  const nextBtn = el(
+    "button",
+    { class: "btn btn-primary", disabled: "true", onclick: () => advanceProduction() },
+    "Next word →"
+  );
+  function unlockNext() {
+    nextBtn.disabled = false;
+    hint.textContent = "";
+  }
+
+  // Shared fallback for "no mic on this device", "permission denied", and
+  // the explicit "No microphone" button below — same UI, same unlock rule:
+  // Next stays locked until they've actually pressed play on something.
+  function renderNoMicFallback(container, message, tone) {
+    container.innerHTML = "";
+    if (message) container.appendChild(el("p", { class: `feedback-text ${tone || "muted"}` }, message));
+    const modelBtn = playAudioButton(item.word, "▶ Hear the model version");
+    modelBtn.addEventListener("click", unlockNext);
+    container.appendChild(modelBtn);
+  }
+
+  if (!Recorder.supported) {
+    renderNoMicFallback(
+      card,
+      "Recording isn't supported in this browser, so you can only listen to the model version below.",
+      "bad"
+    );
+    card.appendChild(hint);
+    card.appendChild(nextBtn);
+    root.appendChild(card);
+    return;
+  }
+
+  const recordArea = el("div", { class: "record-area" });
+  const recordBtn = el("button", { class: "btn btn-record" }, "● Record");
+  const noMicBtn = el("button", { class: "btn btn-secondary" }, "No microphone");
+  const status = el("div", { class: "record-status" }, "");
+  const playbackRow = el("div", { class: "playback-row" });
+
+  let recording = false;
+  let awardedThisWord = false;
+
+  noMicBtn.addEventListener("click", () => {
+    renderNoMicFallback(recordArea, "No problem — just listen to the model version instead.");
+    playbackRow.innerHTML = "";
+  });
+
+  recordBtn.addEventListener("click", async () => {
+    if (recording) return;
+    recording = true;
+    recordBtn.disabled = true;
+    noMicBtn.disabled = true;
+    status.textContent = "Recording… tap stop when done.";
+    playbackRow.innerHTML = ""; // clear any previous take while re-recording
+
+    const stopBtn = el("button", { class: "btn btn-record-stop" }, "■ Stop");
+    recordArea.appendChild(stopBtn);
+
+    try {
+      await Recorder.start();
+    } catch (err) {
+      renderNoMicFallback(recordArea, "Microphone access was denied or unavailable — listen to the model version instead.", "bad");
+      recording = false;
+      return;
+    }
+
+    stopBtn.addEventListener(
+      "click",
+      async () => {
+        stopBtn.disabled = true;
+        status.textContent = "Processing…";
+        const url = await Recorder.stopAndGetUrl();
+        stopBtn.remove();
+
+        if (!url) {
+          status.textContent = "Something went wrong with that recording — try again.";
+        } else {
+          status.textContent = "Got it — compare below.";
+          playbackRow.innerHTML = "";
+          playbackRow.appendChild(el("div", { class: "playback-label" }, "Your recording:"));
+          const ownAudio = el("audio", { controls: "true", src: url });
+          ownAudio.addEventListener("play", unlockNext);
+          playbackRow.appendChild(ownAudio);
+          playbackRow.appendChild(el("div", { class: "playback-label" }, "Model version:"));
+          const modelBtn = playAudioButton(item.word, "▶ Play model version");
+          modelBtn.addEventListener("click", unlockNext);
+          playbackRow.appendChild(modelBtn);
+          if (!awardedThisWord) {
+            awardedThisWord = true;
+            awardPoints(5);
+          }
+        }
+
+        recordBtn.textContent = "● Record again";
+        recordBtn.disabled = false;
+        noMicBtn.disabled = false;
+        recording = false;
+      },
+      { once: true }
+    );
+  });
+
+  recordArea.appendChild(recordBtn);
+  recordArea.appendChild(noMicBtn);
+  recordArea.appendChild(status);
+  card.appendChild(recordArea);
+  card.appendChild(playbackRow);
+  card.appendChild(hint);
+  card.appendChild(nextBtn);
+
+  root.appendChild(card);
+}
+
+function advanceProduction() {
+  Recorder.discardUrl(); // delete recording as soon as we move on — never persisted
+  state.production.i++;
+  renderCurrentStage();
+}
+
+// ---- Stage 4: Spelling -----------------------------------------------------
+// Attempts 1 and 2: type the whole word from hearing it.
+// Final attempt (MAX_ATTEMPTS_PER_WORD): the word's own letters are given,
+// shuffled, and the student just puts them in order.
+
+function renderSpelling() {
+  const level = state.level;
+  if (!state.spelling.drill) {
+    state.spelling.drill = newDrillState(spellingDrillItems(level));
+  }
+  const drill = state.spelling.drill;
+
+  if (isDrillDone(drill)) {
+    // Aftermath: the same splatter, rebuilt still, so the summary shows the
+    // mess they actually made rather than a fresh avocado.
+    const aftermath = makeScene("hammer", {
+      total: drill.totalWords,
+      charge: state.game.hammer,
+      smashed: state.game.smashed,
+      ratio: state.game.ratio
+    });
+    root.appendChild(
+      drillSummaryCard(drill, "Spelling", nextStage, "Continue to the dictation →", aftermath.node)
+    );
+    return;
+  }
+
+  const item = currentDrillItem(drill);
+  const attemptNumber = (drill.attempts[drillKey(item)] || 0) + 1;
+  const scene = makeScene("hammer", { total: drill.totalWords, charge: state.game.hammer });
+
+  if (attemptNumber < MAX_ATTEMPTS_PER_WORD) renderSpellingTyping(item, drill, attemptNumber, scene);
+  else renderSpellingArrange(item, drill, attemptNumber, scene);
+}
+
+// ---- shared bits across both spelling attempt-types ------------------------
+
+function appendSpellingHeader(card, drill, attemptNumber) {
+  if (drill.idx === 0 && drill.roundNumber > 1) {
+    card.appendChild(el("div", { class: "round-banner" }, "Let's try the ones you missed again."));
+  }
+  card.appendChild(
+    el(
+      "div",
+      { class: "progress-line" },
+      `Word ${drill.idx + 1} of ${drill.round.length}` +
+        (attemptNumber > 1 ? ` — attempt ${attemptNumber} of ${MAX_ATTEMPTS_PER_WORD}` : "")
+    )
+  );
+}
+
+function spellingNextWordButton(drill, label) {
+  return el(
+    "button",
+    {
+      class: "btn btn-primary",
+      onclick: () => {
+        advanceDrillIndex(drill);
+        renderCurrentStage();
+      }
+    },
+    label || "Next word →"
+  );
+}
+
+// Takes an options object rather than a positional list — it had grown to
+// eight arguments and the hammer scene made nine.
+// o = { feedback, correct, item, correctPattern, attemptNumber, drill, points, scene }
+function appendSpellingResultFeedback(o) {
+  const feedback = o.feedback;
+  feedback.innerHTML = "";
+
+  if (o.correct) {
+    registerCorrectStreak();
+    awardPoints(o.points);
+    state.game.hammer++;
+    o.scene.chargeUp();
+    feedback.appendChild(el("p", { class: "feedback-text good" }, pickAffirmation()));
+  } else {
+    registerWrongStreak();
+    feedback.appendChild(
+      el("p", { class: "feedback-text bad" }, explainWrong(state.level, o.item, o.correctPattern))
+    );
+    if (o.attemptNumber >= MAX_ATTEMPTS_PER_WORD) {
+      feedback.appendChild(el("p", { class: "feedback-text muted" }, "That's three tries on this one — let's move on for now."));
+    }
+  }
+
+  // Is that the last question of the stage? recordDrillAnswer() has already
+  // run by now, so nextRound is settled: if the current round is finished
+  // and nothing is queued for a retry, advanceDrillIndex() ends the drill.
+  const isLast = o.drill.idx + 1 >= o.drill.round.length && o.drill.nextRound.length === 0;
+  const ratio = o.drill.totalWords ? state.game.hammer / o.drill.totalWords : 0;
+
+  const nextBtn = spellingNextWordButton(
+    o.drill,
+    isLast ? (ratio > 0 ? "See the damage →" : "Finish spelling →") : "Next word →"
+  );
+  feedback.appendChild(nextBtn);
+
+  if (isLast) {
+    state.game.smashed = true;
+    state.game.ratio = ratio;
+    // Held shut for the length of the swing so nobody clicks past the one
+    // moment the whole stage has been building to.
+    nextBtn.disabled = true;
+    o.scene.smash(ratio).then(() => {
+      const headline = sceneVerdict(ratio).headline;
+      if (headline) feedback.insertBefore(el("p", { class: "verdict" }, headline), nextBtn);
+      nextBtn.disabled = false;
+    });
+  }
+}
+
+// ---- Attempts 1-2: type the whole word -------------------------------------
+
+function renderSpellingTyping(item, drill, attemptNumber, scene) {
+  const level = state.level;
+  const correctPattern = patternOf(level, item.pattern);
+
+  const card = el("div", { class: "card" });
+  appendScene(card, scene);
+  appendSpellingHeader(card, drill, attemptNumber);
+  card.appendChild(el("h2", {}, "Spell it — type the whole word"));
+  card.appendChild(playAudioButton(item.word, "▶ Hear the word"));
+
+  const input = el("input", {
+    class: "text-input mono",
+    type: "text",
+    autocomplete: "off",
+    autocapitalize: "off",
+    spellcheck: "false",
+    placeholder: "Type the word…"
+  });
+  const submitBtn = el("button", { class: "btn btn-primary" }, "Check");
+  const feedback = el("div", { class: "feedback", id: "spelling-feedback" });
+
+  function submit() {
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    input.disabled = true;
+    const correct = input.value.trim().toLowerCase() === item.word.toLowerCase();
+    const attemptNum = recordDrillAnswer(drill, item, correct);
+    appendSpellingResultFeedback({
+      feedback: feedback,
+      correct: correct,
+      item: item,
+      correctPattern: correctPattern,
+      attemptNumber: attemptNum,
+      drill: drill,
+      points: attemptNum === 1 ? 10 : 5,
+      scene: scene
+    });
+  }
+
+  submitBtn.addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+
+  card.appendChild(el("div", { class: "type-row" }, [input, submitBtn]));
+  card.appendChild(feedback);
+
+  root.appendChild(card);
+  input.focus();
+}
+
+// ---- Final attempt: letters given, put them in order -----------------------
+
+function shuffledLetters(word) {
+  const letters = Array.from(word).map((ch, i) => ({ ch, id: i }));
+  if (letters.length <= 1) return letters;
+  let attempt;
+  do {
+    attempt = shuffle(letters);
+  } while (attempt.map((t) => t.ch).join("") === word);
+  return attempt;
+}
+
+function renderSpellingArrange(item, drill, attemptNumber, scene) {
+  const level = state.level;
+  const correctPattern = patternOf(level, item.pattern);
+
+  const card = el("div", { class: "card" });
+  appendScene(card, scene);
+  appendSpellingHeader(card, drill, attemptNumber);
+  card.appendChild(el("h2", {}, "Spell it — put the letters in order"));
+  card.appendChild(el("p", { class: "muted" }, "Here are the letters, out of order. Tap them into place; tap a placed letter to take it back out."));
+  card.appendChild(playAudioButton(item.word, "▶ Hear the word"));
+
+  const tiles = shuffledLetters(item.word); // [{ ch, id }]
+  const tileChar = (id) => tiles.find((t) => t.id === id).ch;
+  let bank = tiles.map((t) => t.id);
+  let answer = [];
+  let checked = false;
+
+  const answerRow = el("div", { class: "arrange-answer" });
+  const bankRow = el("div", { class: "arrange-bank" });
+  const controls = el("div", { class: "arrange-controls" });
+  const feedback = el("div", { class: "feedback", id: "spelling-feedback" });
+
+  function redraw() {
+    answerRow.innerHTML = "";
+    answer.forEach((id) => {
+      const attrs = { class: "btn tile tile-answer mono" };
+      if (checked) attrs.disabled = "true";
+      const tileBtn = el("button", attrs, tileChar(id));
+      if (!checked) {
+        tileBtn.addEventListener("click", () => {
+          answer = answer.filter((a) => a !== id);
+          bank.push(id);
+          redraw();
+        });
+      }
+      answerRow.appendChild(tileBtn);
+    });
+    for (let i = answer.length; i < tiles.length; i++) {
+      answerRow.appendChild(el("div", { class: "tile tile-empty" }, ""));
+    }
+
+    bankRow.innerHTML = "";
+    if (!checked) {
+      bank.forEach((id) => {
+        const tileBtn = el("button", { class: "btn tile tile-bank mono" }, tileChar(id));
+        tileBtn.addEventListener("click", () => {
+          bank = bank.filter((b) => b !== id);
+          answer.push(id);
+          redraw();
+          if (answer.length === tiles.length) submit();
+        });
+        bankRow.appendChild(tileBtn);
+      });
+    }
+
+    controls.innerHTML = "";
+    if (answer.length > 0 && !checked) {
+      controls.appendChild(
+        el(
+          "button",
+          {
+            class: "btn btn-secondary",
+            onclick: () => {
+              answer = [];
+              bank = tiles.map((t) => t.id);
+              redraw();
+            }
+          },
+          "Clear"
+        )
+      );
+    }
+  }
+
+  function submit() {
+    checked = true;
+    redraw();
+    const correct = answer.map(tileChar).join("") === item.word;
+    recordDrillAnswer(drill, item, correct);
+    appendSpellingResultFeedback({
+      feedback: feedback,
+      correct: correct,
+      item: item,
+      correctPattern: correctPattern,
+      attemptNumber: attemptNumber,
+      drill: drill,
+      points: 5,
+      scene: scene
+    });
+  }
+
+  card.appendChild(answerRow);
+  card.appendChild(bankRow);
+  card.appendChild(controls);
+  card.appendChild(feedback);
+
+  root.appendChild(card);
+  redraw();
+}
+
+// ---- Stage 5: Final dictation (not graded) --------------------------------
+// Each word can be played individually, and slowly, as many times as
+// needed. The app doesn't check spelling here — the student writes each
+// word in their homework book and the teacher marks it.
+
+function renderFinal() {
+  const level = state.level;
+  const dictation = level.dictation;
+
+  const card = el("div", { class: "card" }, [
+    el("h2", {}, "Final dictation"),
+    el("p", {}, dictation.instructions)
+  ]);
+
+  const list = el("div", { class: "dictation-list" });
+  dictation.words.forEach((word, i) => {
+    const row = el("div", { class: "dictation-row" + (dictationPlayed.has(word) ? " played" : "") });
+    row.appendChild(el("div", { class: "dictation-number" }, `${i + 1}.`));
+    const btn = playAudioButton(word, "▶ Play slowly", 0.6);
+    btn.addEventListener("click", () => {
+      if (!dictationPlayed.has(word)) {
+        dictationPlayed.add(word);
+        awardPoints(5);
+      }
+      row.classList.add("played");
+    });
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+
+  card.appendChild(
+    el("div", { class: "sentence-note" }, "The app doesn't mark this one — your teacher will check your Homework book.")
+  );
+
+  card.appendChild(
+    el("button", { class: "btn btn-primary", onclick: () => finishLevel() }, "I've written them down — finish level")
+  );
+
+  root.appendChild(card);
+}
+
+function finishLevel() {
+  const level = state.level;
+  const missed = [
+    ...(state.discrimination.drill ? state.discrimination.drill.movedOn : []),
+    ...(state.spelling.drill ? state.spelling.drill.movedOn : [])
+  ];
+  const uniqueMissed = [...new Set(missed.map((m) => m.word))];
+
+  root.innerHTML = "";
+  root.appendChild(
+    el("div", { class: "card complete-card" }, [
+      el("h2", {}, "Level complete"),
+      el("p", {}, `"${level.patternA.grapheme}" vs "${level.patternB.grapheme}" — all ${state.stages.length} stages done.`),
+      el("p", { class: "stars" }, `★ ${state.score} points   —   best streak 🔥 ${state.bestStreak}`),
+      el(
+        "p",
+        { class: "muted" },
+        `Fish caught: ${state.game.fish}. Avocado: ${sceneVerdict(state.game.ratio).headline}`
+      ),
+      el(
+        "p",
+        { class: "muted" },
+        dictationPlayed.size
+          ? `Played ${dictationPlayed.size} / ${level.dictation.words.length} dictation words — go write them up.`
+          : "Note: none of the dictation words were played."
+      ),
+      uniqueMissed.length
+        ? el("p", { class: "muted" }, "Words to revisit next time: " + uniqueMissed.join(", "))
+        : null,
+      el("button", { class: "btn btn-secondary", onclick: restart }, "Restart this level")
+    ])
+  );
+}
+
+function restart() {
+  state.stageIndex = 0;
+  state.discrimination = { drill: null };
+  state.production = { queue: [], i: 0 };
+  state.spelling = { drill: null };
+  state.score = 0;
+  state.streak = 0;
+  state.bestStreak = 0;
+  state.game = { fish: 0, hammer: 0, smashed: false, ratio: 0 };
+  dictationPlayed.clear();
+  Recorder.discardUrl();
+  Recorder.releaseMic();
+  renderScoreboard();
+  renderStageDots();
+  renderCurrentStage();
+}
+
+// ---- Boot ------------------------------------------------------------
+
+document.addEventListener("DOMContentLoaded", init);
+
+</script>
+</body>
+</html>
